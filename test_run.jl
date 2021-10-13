@@ -1,6 +1,7 @@
 # include the SSA for the nRNA and some other packages.
 include("./DSSA-delayed-telegraph.jl"); using .SSAdelayedtelegraph;
-using Plots, DelimitedFiles, LaTeXStrings, CSV;
+using Plots, DelimitedFiles, LaTeXStrings, Distributions, Parameters, StatsBase, LinearAlgebra, Colors;
+Plots.theme(:dao) # plot theme
 
 # change the working dir
 cd("/home/jamesholehouse/github/Detailed-nRNA-Model/")
@@ -21,9 +22,21 @@ g_1 = 1 .- data[1,1,:];
 
 writedlm("test_data/data1.csv",n_traj[1:end])
 
+function hist_prob(data::Vector{Float64})
+        N = Int(floor(maximum(data)));
+        mod_bins = LinRange(0.0,N,N);
+        mid_pts = LinRange(0.0,N,N);
+        bin_vals = normalize(fit(Histogram, data, mod_bins), mode=:probability).weights;
+        return (mid_pts, bin_vals)
+end
 
 # plot first 1000 sample points
 time = [sp*i for i in 1:1000];
-plt = plot(time,n_traj[1:1000], label = L"$N$");
-xlabel!("time/s"); ylabel!("Molecule #s");
-gui(plt)
+plt = plot(time,n_traj[1:1000], label = L"$N$", legend = :topleft, grid = false);
+xlabel!(L"\mathrm{time}/s"); ylabel!(L"\mathrm{Molecule}\quad \#s");
+savefig("test_figs/fig1.svg")
+
+# plot histogram
+barplt = bar(hist_prob(n_traj), legend = :none, grid = false)
+xlabel!(L"\mathrm{Molecule}\quad \#s"); ylabel!(L"P(n)")
+savefig("test_figs/bar1.svg")
