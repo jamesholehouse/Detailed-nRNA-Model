@@ -150,8 +150,11 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, N₀::Int64, to
                     follow_n = rand([1,2])
                     if follow_n == 1
                         n_temp = [n_temp[1],n_temp[2],0,0,1] # inherit gene state and nascent from 1.
-                    else
+                        delay_times_2 = []; # reset delay times 2
+                    else # follow_n == 2
                         n_temp = [n_temp[3],n_temp[4],0,0,1] # inherit gene state and nascent from 2.
+                        delay_times_1 = delay_times_2; # reassign delay times 2-->1.
+                        delay_times_2 = []; # reset delay times 2
                     end
                 end
 
