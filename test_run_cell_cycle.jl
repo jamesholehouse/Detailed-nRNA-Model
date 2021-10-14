@@ -35,9 +35,11 @@ end
 time = [sp*i for i in 1:1000];
 plt = plot(time,n_traj[1:1000], label = L"$N$", legend = :none, grid = false);
 xlabel!(L"\mathrm{time}/s"); ylabel!(L"\mathrm{Molecule}\quad \#s");
+@show plt
 savefig(plt,"test_figs/fig_cc1.svg")
 
 # plot histogram
 barplt = bar(hist_prob(n_traj[1000:end]), legend = :none, grid = false)
 xlabel!(L"\mathrm{Molecule}\quad \#s"); ylabel!(L"P(n)")
+@show barplt
 savefig(barplt,"test_figs/bar_cc1.svg")
