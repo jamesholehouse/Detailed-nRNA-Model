@@ -1,8 +1,16 @@
+# in this file we have the code for the delayed telegraph model.
+
 module SSAdelayedtelegraph
 
 export SSAdt,mean,var
 
-# define the propensity function.
+"""
+propensity: function to output the propensities given the state of the system.
+
+args:
+- n: the current state vector.
+- pars: the system parameters.
+"""
 function propensity(n::Vector{Int64},pars::Vector{Float64})
     # Reaction rates
     ρ = pars[1]; σoff = pars[2]; σon = pars[3];
@@ -11,7 +19,7 @@ function propensity(n::Vector{Int64},pars::Vector{Float64})
     f_r[1] = ρ*n[1];
     f_r[2] = σoff*n[1];
     f_r[3] = σon*(1-n[1]);
-    return f_r
+    return f_r::Vector{Float64}
 end
 
 """
@@ -83,7 +91,7 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, tol_time::Float
                 end
 
                 while T+tau >= sim_times[end]
-                    n[1:N,sim,m] = n_temp;
+                    n[1:N,sim,m] = n_temp; # m used here.
                     pop!(sim_times);
                     m += 1;
                     if length(sim_times) == 0

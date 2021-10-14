@@ -11,7 +11,7 @@ par_set = [2.11,0.609,0.0282]; # params should be float64.
 τ = 150.0; # must be float64.
 total_time = 1000000.0; # must be float64.
 sp = 1.0; # must be float64.
-sims = 1; # take a single trajectory. Must be integer.
+sims = 2; # take a single trajectory. Must be integer.
 
 # simulate
 @time data=SSAdt(sims, par_set, τ, total_time, sp);
@@ -32,11 +32,11 @@ end
 
 # plot first 1000 sample points
 time = [sp*i for i in 1:1000];
-plt = plot(time,n_traj[1:1000], label = L"$N$", legend = :topleft, grid = false);
+plt = plot(time,n_traj[1:1000], label = L"$N$", legend = :none, grid = false);
 xlabel!(L"\mathrm{time}/s"); ylabel!(L"\mathrm{Molecule}\quad \#s");
 savefig("test_figs/fig1.svg")
 
 # plot histogram
-barplt = bar(hist_prob(n_traj), legend = :none, grid = false)
+barplt = bar(hist_prob(n_traj[1000:end]), legend = :none, grid = false)
 xlabel!(L"\mathrm{Molecule}\quad \#s"); ylabel!(L"P(n)")
 savefig("test_figs/bar1.svg")
