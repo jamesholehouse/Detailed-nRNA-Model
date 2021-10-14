@@ -3,7 +3,7 @@ module SSAdelayedtelegraph
 export SSAdt,mean,var
 
 # define the propensity function.
-function propensity(n,pars)
+function propensity(n::Vector{Int64},pars::Vector{Float64})
     # Reaction rates
     ρ = pars[1]; σoff = pars[2]; σon = pars[3];
     f_r = zeros(length(pars));
@@ -14,25 +14,46 @@ function propensity(n,pars)
     return f_r
 end
 
+"""
+SSAdt: function to perform the SSA (with the delayed degradation of nRNA) given the necessary parameters.
 
+args:
+- S_time: the number of individual simulations in the ensemble (set to 1 for single trajectory).
+- pars: the parameters for the ensemble simulations.
+- τ: the delayed degradation time.
+- tol_time: the total simulation time to run for.
+- sp: the storage time period, i.e., if sp = 1.0 then final state vector stored every 1.0s.
+
+returns:
+- the state vector at the specified times.
+"""
 function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, tol_time::Float64, sp::Float64)
-    # M = Number of reactions
-    # N = Number of reactants
+
+    sp <= tol_time || error("The storage time period must be less than the total simulation time!")
+
+    # M = Number of reactions, N = Number of reactants
     M = 4::Int; N=2::Int;
+
     # Define stoichiometry matrix
     S_mat = zeros(M,N);
     S_mat[1,1:N] = [0,1];
     S_mat[2,1:N] = [-1,0];
     S_mat[3,1:N] = [1,0];
-    S_mat[4,1:N] = [0,-1];# this is the delayed reaction.
+    S_mat[4,1:N] = [0,-1]; # this is the delayed reaction.
+
+    times = convert(Array{Float64,1},LinRange(tol_time,0.0,floor(Int,tol_time/sp)+1));
+
     # Define reactants trjatory vector
-    n = zeros(N,S_time,Int(floor(tol_time/sp)));
+    n = zeros(N,S_time,length(times));
 
     for sim in 1:S_time
-        n_temp = [0;0]; # gene starts in U** state with zero nascent or mature.
+        n_temp = [0;0]; # gene starts in G* (off) state with zero nascent.
         T = 0;
         delay_times = [];
+        sim_times = copy(times);
 
+        # define counter m for updating storage.
+        m = 1;
         while T < tol_time
             # Step 1: Calculate propensity
             f_r = propensity(n_temp,pars); # propensity of each reaction.
@@ -61,46 +82,47 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, tol_time::Float
                     prepend!(delay_times,T+τ); # prepend so that next delay is on the end
                 end
 
-                T += tau;
-
-                # Update the trajectory vector
-                if T <= tol_time
-                    for t in Int(ceil((T-tau)/sp)) : Int(floor(T/sp))
-                        n[1:N,sim,t+1] = n_temp;
-                    end
-                    # Fire reaction next_r
-                    prod = S_mat[next_r,1:N];
-                    for i in 1:N
-                        n_temp[i] = n_temp[i] + prod[i];
-                    end
-                else
-                    for t in Int(ceil((T-tau)/sp)) : Int(floor(tol_time/sp)-1)
-                        n[1:N,sim,t+1] = n_temp;
+                while T+tau >= sim_times[end]
+                    n[1:N,sim,m] = n_temp;
+                    pop!(sim_times);
+                    m += 1;
+                    if length(sim_times) == 0
+                        break
                     end
                 end
-            # else delay is scheduled and fire the next delayed reaction.
+
+                # update the system time
+                T += tau;
+                # update the state vector
+                prod = S_mat[next_r,1:N];
+                for i in 1:N
+                    n_temp[i] += prod[i]
+                end
+
+            # else delay is next scheduled reaction
             elseif fire_delay == 1
-                prev_T = T;
-                T = pop!(delay_times); # take the delay time and remove it from delay_times
+                deg_T = pop!(delay_times); # take the delay time and remove it from delay_times
+                tau = deg_T - T; # time diff to the delayed reaction.
                 next_r = 4; # set the next_r to the delayed reaction.
 
-                # Update the trajectory vector
-                if T <= tol_time
-                    for t in Int(ceil((prev_T)/sp)) : Int(floor(T/sp))
-                        n[1:N,sim,t+1] = n_temp;
-                    end
-                    # Fire reaction next_r
-                    prod = S_mat[next_r,1:N];
-                    for i in 1:N
-                        n_temp[i] = n_temp[i] + prod[i];
-                    end
-                else
-                    for t in Int(ceil((prev_T)/sp)) : Int(floor(tol_time/sp)-1)
-                        n[1:N,sim,t+1] = n_temp;
+                while T+tau >= sim_times[end]
+                    n[1:N,sim,m] = n_temp;
+                    pop!(sim_times);
+                    m += 1;
+                    if length(sim_times) == 0
+                        break
                     end
                 end
+
+                # update the system time
+                T += tau;
+                # update the state vector
+                prod = S_mat[next_r,1:N];
+                for i in 1:N
+                    n_temp[i] += prod[i]
+                end
             else
-                print("Error")
+                error("Reaction fired is either of type delay or Gillespie!")
             end
 
         end
@@ -108,7 +130,7 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, tol_time::Float
             println(sim)
         end
     end
-    return n
+    return n::Array{Float64, 3}
 end
 
 # data is a 2-D array:
