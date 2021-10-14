@@ -3,7 +3,7 @@
 Here I detail the SSA for a detailed model of nascent RNA (nRNA), that incorporates:
 - nRNA production rate `rho`,
 - **delayed** nRNA degradation at time `tau` , 
-- on/off gene switching at rates `\sigma_b` and `\sigma_u`,
+- on/off gene switching at rates `sigma_b` and `sigma_u`,
 - hopping rate between the cell cycle stages `k`,
 - number of cell cycle stages `N`,
 - the fraction denoting the gene dosage compensation after gene replication `kappa`.
