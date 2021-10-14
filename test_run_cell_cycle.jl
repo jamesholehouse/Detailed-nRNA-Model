@@ -7,7 +7,7 @@ Plots.theme(:dao) # plot theme
 cd("/home/jamesholehouse/github/Detailed-nRNA-Model/")
 
 # define some useful stuff
-par_set = [2.11,0.609,0.0282, 0.5, 0.05]; # params should be float64.
+par_set = [2.11,0.609,0.0282, 0.66, 0.05]; # params should be float64.
 τ = 150.0; # must be float64.
 N₀ = 10; # must be Int64 and ≧ 2.
 total_time = 1000000.0; # must be float64.
