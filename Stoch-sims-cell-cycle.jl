@@ -10,6 +10,9 @@ propensity: function to output the propensities given the state of the system.
 args:
 - n: the current state vector.
 - pars: the system parameters.
+
+returns:
+- the propensity vector given the state of the system.
 """
 function propensity(n::Vector{Int64}, pars::Vector{Float64}, replicated::Bool)
     # Reaction rates
@@ -55,8 +58,8 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, N₀::Int64, to
     N₀ >= 2 || error("The number of stages of the cell cycle needs to be at least 2.")
     sp <= tol_time || error("The storage time period must be less than the total simulation time!")
 
-    # M = Number of reactions, N = Number of reactants + cell cycle stage (CCS) counter.
-    M = 9::Int; N=5::Int;
+    # M = Number of reactions, N = {Number of reactants + cell cycle stage (CCS) counter}.
+    M = 9; N = 5;
 
     # Define stoichiometry matrix
     S_mat = zeros(M,N);
@@ -71,25 +74,26 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, N₀::Int64, to
     S_mat[8,1:N] = [0,-1,0,0,0]; # this is the delayed reaction for N₁ degradation
     S_mat[9,1:N] = [0,0,0,-1,0]; # this is the delayed reaction for N₂ degradation
 
+    # based on tol_time and sp, define the times at which we store the state vector (reversed).
     times = convert(Array{Float64,1},LinRange(tol_time,0.0,floor(Int,tol_time/sp)+1));
-
     # Define reactants trjatory vector
     n = zeros(N,S_time,length(times));
 
     for sim in 1:S_time
         n_temp = [0;0;0;0;1]; # gene starts in G* (off) state with zero nascent in CC stage 1 (of N).
-        T = 0;
+        replicated = false; # initialise replicated to zero
+
+        T = 0; # init time to zero.
         delay_times_1 = []; # delay times for N₁
         delay_times_2 = []; # delay times for N₂
-        sim_times = copy(times);
+        sim_times = copy(times); # copy storage times (we will pop! times from this array as sim goes on).
 
-        # define counter m for updating storage.
+        # define counter m for updating storage n.
         m = 1;
-        # initialise replicated to zero
-        replicated = false;
+
+        # start the SSA.
         while T < tol_time
             # Step 1: Calculate propensity
-            # println(n_temp)
             f_r = propensity(n_temp, pars, replicated); # propensity of each reaction.
             lambda = sum(f_r); # total propensity of any reaction.
 
@@ -178,7 +182,8 @@ function SSAdt(S_time::Int, pars::Array{Float64,1}, τ::Float64, N₀::Int64, to
                 # update the state vector
                 prod = S_mat[next_r,1:N];
                 n_temp = convert(Vector{Int64}, n_temp + prod)
-                # else delay is next scheduled reaction
+
+            # else delay is next scheduled reaction for N₂
             elseif fire_delay == 2
                 deg_T = pop!(delay_times_2); # take the delay time and remove it from delay_times
                 tau = deg_T - T; # time diff to the delayed reaction.
